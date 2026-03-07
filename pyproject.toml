@@ -1,0 +1,35 @@
+[project]
+name = "fraud-detection-quality-analysis"
+version = "0.1.0"
+description = "AWS-based fraud detection and manufacturer quality analysis pipeline"
+requires-python = ">=3.11"
+dependencies = [
+    "boto3>=1.34",
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "pandas>=2.2",
+    "pyarrow>=15.0",
+    "httpx>=0.27",
+    "requests>=2.31",
+    "pyspark>=3.5",
+    "mangum>=0.17",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "hypothesis>=6.100",
+    "moto[s3,lambda]>=5.0",
+    "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning:mangum",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"

@@ -1,0 +1,3 @@
+{
+  "app": "PYTHONPATH=. .venv/bin/python infra/app.py"
+}
