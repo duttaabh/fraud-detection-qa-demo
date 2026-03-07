@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+*.egg
+
+# Hypothesis
+.hypothesis/
+
+# Pytest
+.pytest_cache/
+
+# CDK
+cdk.out/
+
+# Node
+node_modules/
+dashboard/dist/
+dashboard/cdk.out/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+/tmp/
+*.tmp
