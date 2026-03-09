@@ -4,46 +4,58 @@ An AWS-native pipeline that detects anomalous warranty claims and flags manufact
 
 ## How It Works
 
-### Anomaly Detection with Random Cut Forest
+This pipeline finds suspicious warranty claims and flags manufacturers with quality problems — automatically, without anyone defining what "fraud" looks like.
 
-The pipeline uses Amazon SageMaker's [Random Cut Forest](https://docs.aws.amazon.com/sagemaker/latest/dg/randomcutforest.html) algorithm for unsupervised anomaly detection. RCF assigns an anomaly score to each data point — higher scores indicate more anomalous claims.
+### The Algorithm
 
-### Feature Engineering
+The [Random Cut Forest](https://docs.aws.amazon.com/sagemaker/latest/dg/randomcutforest.html) (RCF) algorithm learns what a "normal" claim looks like by studying millions of them. It randomly slices the data space into regions — normal claims cluster together in dense groups, while unusual claims sit alone in sparse corners. The more isolated a claim is, the higher its anomaly score. Scores are scaled to 0–1, and anything above 0.7 is flagged as suspected fraud.
 
-Each warranty claim is transformed into a 12-dimensional numerical vector:
+### The Features
 
-| Feature | Type | Description |
-|---------|------|-------------|
-| `claim_amount` | continuous (scaled) | Dollar amount of the claim |
-| `days_between_contract_start_and_claim` | continuous (scaled) | Time gap between contract start and claim |
-| `manufacturer_claim_frequency` | continuous (scaled) | Total claims for this manufacturer |
-| `claim_type_repair` | one-hot | 1 if claim type is "repair" |
-| `claim_type_replacement` | one-hot | 1 if claim type is "replacement" |
-| `claim_type_refund` | one-hot | 1 if claim type is "refund" |
-| `claim_type_unknown` | one-hot | 1 if claim type is null |
-| `product_category_electronics` | one-hot | 1 if category is "electronics" |
-| `product_category_appliances` | one-hot | 1 if category is "appliances" |
-| `product_category_automotive` | one-hot | 1 if category is "automotive" |
-| `product_category_furniture` | one-hot | 1 if category is "furniture" |
-| `product_category_unknown` | one-hot | 1 if category is null |
+Each claim is described by 12 numbers. There are two types:
 
-Continuous features are standard-scaled (zero mean, unit variance). Scaler parameters are persisted to S3 for consistent inference.
+- **Continuous** — Measurements like dollar amounts or days, standardized so they're comparable (0 = average, 2 = twice as far from average as most)
+- **One-hot** — Yes/no flags for categories like claim type or product type (1 = yes, 0 = no)
 
-### Score Normalization & Flagging
+| Feature | Type | What it captures |
+|---------|------|-----------------|
+| `claim_amount` | continuous | Dollar amount. A $15k claim when the average is $500 stands out immediately. |
+| `days_between_contract_start_and_claim` | continuous | How fast the claim was filed. A claim 2 weeks after purchase is more suspicious than one at 18 months. |
+| `manufacturer_claim_frequency` | continuous | Total claims for this manufacturer. 500 claims when peers average 50 is a red flag. |
+| `claim_type_repair` | one-hot | Repair claim? Manufacturers with disproportionate repairs signal quality issues. |
+| `claim_type_replacement` | one-hot | Replacement claim? |
+| `claim_type_refund` | one-hot | Refund claim? |
+| `claim_type_unknown` | one-hot | Missing claim type? Missing data can itself be a signal. |
+| `product_category_electronics` | one-hot | Electronics product? |
+| `product_category_appliances` | one-hot | Appliance? |
+| `product_category_automotive` | one-hot | Automotive product? |
+| `product_category_furniture` | one-hot | Furniture? |
+| `product_category_unknown` | one-hot | Missing category? |
 
-Raw RCF anomaly scores are min-max normalized to [0, 1]. Claims with normalized scores above the fraud threshold (default: 0.7) are flagged as suspected fraud.
+### How Features Catch Fraud
 
-### Manufacturer Quality Scoring
+**Continuous features** measure magnitude — how extreme a claim is compared to normal:
+- A $15k `claim_amount` when the average is $500 places the claim far from the cluster. The standardized value might be 5+ (meaning 5x further from average than most claims).
+- A `days_between_contract_start_and_claim` of 14 days when most claims come at 18 months flags suspiciously fast filing.
+- A `manufacturer_claim_frequency` of 500 when peers average 50 means every claim from that manufacturer already starts in unusual territory.
 
-Per-claim results are aggregated by manufacturer, and each manufacturer's repair claim rate is computed (fraction of claims with type "repair"). The quality score is the z-score of a manufacturer's repair rate across all manufacturers — a manufacturer with a disproportionately high repair rate relative to peers gets a higher quality score. Manufacturers with quality scores above the threshold (default: 2.0 standard deviations) are flagged as quality concerns. This surfaces manufacturers whose products require unusually frequent repairs, highlighting potential quality issues. Quality results include per-SKU breakdowns showing repair counts and rates for each product.
+**One-hot features** capture categorical patterns — what kind of claim this is:
+- `claim_type_repair` = 1 combined with a high dollar amount is a different signal than a replacement or refund at the same amount. Repairs are the most common type in fraudulent patterns.
+- `product_category_furniture` = 1 with a $10k amount is far more unusual than `product_category_automotive` = 1 at the same amount. The encoding lets the algorithm learn different "normal" ranges per category.
 
-### Contributing Factors
+The power is in the combination. A single unusual feature might not trigger a flag. But a claim that's high-dollar AND filed quickly AND a repair AND from a high-frequency manufacturer sits in a region of the data space where almost no legitimate claims exist. RCF detects this isolation and assigns a high anomaly score. The top 3 features with the largest deviation from normal are reported as contributing factors.
 
-For each flagged claim, the top 3 features with the highest absolute z-score deviation from the population mean are reported as contributing factors.
+### How Features Catch Quality Issues
 
-### Synthetic Data Generation
+Separately from fraud, the pipeline aggregates claims by manufacturer and computes each one's repair rate (repairs ÷ total claims). If a manufacturer's repair rate is more than 2 standard deviations above the mean, they're flagged as a quality concern. This catches manufacturers whose products break far more often than peers. Results include per-SKU breakdowns so analysts can pinpoint which products are driving the problem.
 
-The data generator creates realistic warranty claim data with three manufacturer quality tiers:
+### AI Reasoning
+
+On the dashboard, analysts can request a plain-English explanation for any flagged claim or manufacturer, powered by Amazon Bedrock Nova Pro. The AI reviews the statistical scores, contributing factors, and context to generate a narrative assessment.
+
+### Synthetic Data
+
+The data generator creates realistic test data with three manufacturer tiers:
 
 | Tier | % of Manufacturers | Behavior |
 |------|-------------------|----------|
@@ -51,7 +63,7 @@ The data generator creates realistic warranty claim data with three manufacturer
 | Good Quality | ~50% | Very low repair rates (~5%), lower claim amounts, mostly replacement/refund |
 | Neutral | ~40% | Normal mix of claim types and amounts |
 
-Claims are split 50/50 between normal and anomalous patterns. Anomalous claims use four patterns: `high_amount` ($5k–$25k), `rapid_claim` (last 6 months), `repair_burst` (always repair type), and `combo` (high amount + repair). This gives the RCF model clear separation and the quality scoring a strong repair-rate signal, while ensuring good-quality manufacturers have distinctly low anomaly profiles.
+Claims are split 50/50 between normal and anomalous patterns using four anomaly types: `high_amount` ($5k–$25k), `rapid_claim` (filed within 6 months), `repair_burst` (always repair type), and `combo` (high amount + repair).
 
 ## Architecture
 
