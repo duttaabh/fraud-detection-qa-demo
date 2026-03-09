@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import time
 
 from aws_cdk import (
     Stack,
@@ -252,6 +253,7 @@ class FraudDetectionStack(Stack):
             environment={
                 "S3_BUCKET": self.data_bucket.bucket_name,
                 "RESULTS_PREFIX": "results/",
+                "DEPLOY_VERSION": str(int(time.time())),
             },
             timeout=Duration.seconds(30),
             memory_size=1024,
@@ -377,7 +379,6 @@ class FraudDetectionStack(Stack):
 
         # Create demo user (email: demo@example.com, auto-generated password)
         import hashlib
-        import time
         auto_password = hashlib.sha256(f"FraudDemo-{self.account}-{self.region}".encode()).hexdigest()[:12] + "A1!"
         self.demo_user = cognito.CfnUserPoolUser(
             self,
