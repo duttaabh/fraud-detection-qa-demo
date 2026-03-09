@@ -15,6 +15,9 @@ function filterParams(f?: Filters): Record<string, string> {
   if (f?.date_to) p.date_to = f.date_to;
   if (f?.manufacturer) p.manufacturer = f.manufacturer;
   if (f?.category) p.category = f.category;
+  if (f?.score_min != null) p.score_min = String(f.score_min);
+  if (f?.score_max != null) p.score_max = String(f.score_max);
+  if (f?.reason) p.reason = f.reason;
   return p;
 }
 

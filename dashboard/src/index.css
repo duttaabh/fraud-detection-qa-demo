@@ -37,6 +37,20 @@ h3 { margin: 1.5rem 0 0.5rem; }
 }
 .filters label { display: flex; flex-direction: column; font-size: 0.8rem; gap: 0.25rem; }
 .filters input { padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; }
+.filters select {
+  padding: 0.4rem 2rem 0.4rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
+  appearance: none;
+  font-size: 0.85rem;
+  color: #1a1a2e;
+  cursor: pointer;
+  min-width: 10rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.filters select:hover { border-color: #1a1a2e; }
+.filters select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
 .filters button {
   padding: 0.4rem 1rem; border: none; border-radius: 4px;
   background: #1a1a2e; color: #fff; cursor: pointer;
@@ -51,12 +65,29 @@ td a { color: #2563eb; text-decoration: none; }
 td a:hover { text-decoration: underline; }
 
 /* Pagination */
-.pagination { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
-.pagination button {
-  padding: 0.3rem 0.8rem; border: 1px solid #ccc; border-radius: 4px;
-  background: #fff; cursor: pointer;
+.pagination {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.75rem; margin-top: 1.25rem; padding: 0.75rem 0;
 }
-.pagination button:disabled { opacity: 0.4; cursor: default; }
+.pagination button {
+  padding: 0.4rem 1rem; border: 1px solid #d1d5db; border-radius: 6px;
+  background: #fff; cursor: pointer; font-size: 0.85rem; color: #1a1a2e;
+  transition: all 0.15s ease;
+}
+.pagination button:hover:not(:disabled) { background: #f0f0f5; border-color: #1a1a2e; }
+.pagination button:disabled { opacity: 0.35; cursor: default; }
+.pagination-info {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.85rem; color: #555;
+}
+.pagination-select {
+  padding: 0.3rem 0.5rem; border: 1px solid #d1d5db; border-radius: 6px;
+  background: #fff; font-size: 0.85rem; color: #1a1a2e; cursor: pointer;
+  appearance: auto; min-width: 3.5rem; text-align: center;
+  transition: border-color 0.15s ease;
+}
+.pagination-select:hover { border-color: #1a1a2e; }
+.pagination-select:focus { outline: 2px solid #2563eb; outline-offset: 1px; border-color: #2563eb; }
 
 /* Export */
 .export-btn {
@@ -103,3 +134,18 @@ dt { font-weight: 600; }
   background: none; border: 1px solid #999; border-radius: 4px;
   padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.8rem;
 }
+
+/* Loading overlay */
+.table-container { position: relative; }
+.loading-overlay {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  background: rgba(255,255,255,0.8); border-radius: 6px;
+  font-size: 0.9rem; color: #555;
+}
+.spinner {
+  width: 1.2rem; height: 1.2rem;
+  border: 2px solid #ddd; border-top-color: #1a1a2e;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

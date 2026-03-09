@@ -7,15 +7,17 @@ interface Props {
   scoreLabel?: string;
   scoreMinBound?: number;
   scoreMaxBound?: number;
+  reasonOptions?: string[];
 }
 
-export default function Filters({ onApply, showScoreFilter = false, scoreLabel = "Score", scoreMinBound, scoreMaxBound }: Props) {
+export default function Filters({ onApply, showScoreFilter = false, scoreLabel = "Score", scoreMinBound, scoreMaxBound, reasonOptions }: Props) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [category, setCategory] = useState("");
   const [scoreMin, setScoreMin] = useState("");
   const [scoreMax, setScoreMax] = useState("");
+  const [reason, setReason] = useState("");
 
   const apply = () =>
     onApply({
@@ -25,6 +27,7 @@ export default function Filters({ onApply, showScoreFilter = false, scoreLabel =
       category: category || undefined,
       score_min: scoreMin ? parseFloat(scoreMin) : undefined,
       score_max: scoreMax ? parseFloat(scoreMax) : undefined,
+      reason: reason || undefined,
     });
 
   const clear = () => {
@@ -34,6 +37,7 @@ export default function Filters({ onApply, showScoreFilter = false, scoreLabel =
     setCategory("");
     setScoreMin("");
     setScoreMax("");
+    setReason("");
     onApply({});
   };
 
@@ -66,6 +70,17 @@ export default function Filters({ onApply, showScoreFilter = false, scoreLabel =
             <input type="number" step="0.01" value={scoreMax} onChange={(e) => setScoreMax(e.target.value)} placeholder={scoreMaxBound != null ? scoreMaxBound.toFixed(2) : "1.00"} />
           </label>
         </>
+      )}
+      {reasonOptions && reasonOptions.length > 0 && (
+        <label>
+          Reason
+          <select value={reason} onChange={(e) => setReason(e.target.value)}>
+            <option value="">All</option>
+            {reasonOptions.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </label>
       )}
       <button onClick={apply}>Apply</button>
       <button onClick={clear} className="secondary">Clear</button>

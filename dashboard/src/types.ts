@@ -76,4 +76,5 @@ export interface Filters {
   category?: string;
   score_min?: number;
   score_max?: number;
+  reason?: string;
 }
