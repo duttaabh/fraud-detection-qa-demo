@@ -25,12 +25,18 @@ def _build_filters(
     date_to: Optional[str] = Query(None),
     manufacturer: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
+    score_min: Optional[float] = Query(None),
+    score_max: Optional[float] = Query(None),
+    reason: Optional[str] = Query(None),
 ) -> dict:
     return {
         "date_from": date_from,
         "date_to": date_to,
         "manufacturer": manufacturer,
         "category": category,
+        "score_min": score_min,
+        "score_max": score_max,
+        "reason": reason,
     }
 
 

@@ -81,6 +81,9 @@ class S3DataStore:
         date_to = filters.get("date_to")
         manufacturer = filters.get("manufacturer")
         category = filters.get("category")
+        score_min = filters.get("score_min")
+        score_max = filters.get("score_max")
+        reason = filters.get("reason")
 
         if date_from or date_to:
             scored_at = item.get("scored_at", "")
@@ -99,8 +102,6 @@ class S3DataStore:
                 return False
 
         if category:
-            # Fraud results: check product_category or contributing_factors context
-            # Quality results: check product_category_breakdown keys
             breakdown = item.get("product_category_breakdown")
             if breakdown is not None:
                 if category not in breakdown:
@@ -110,7 +111,42 @@ class S3DataStore:
                 if item_cat != category:
                     return False
 
+        # Score range filtering
+        score = item.get("fraud_score", item.get("quality_score"))
+        if score is not None:
+            if score_min is not None and score < score_min:
+                return False
+            if score_max is not None and score > score_max:
+                return False
+
+        # Reason category filtering
+        if reason:
+            item_reason = S3DataStore._get_reason_category(item)
+            if item_reason != reason:
+                return False
+
         return True
+
+    @staticmethod
+    def _get_reason_category(item: dict) -> str:
+        """Derive the reason category from an item's score."""
+        # Fraud items have fraud_score
+        fraud_score = item.get("fraud_score")
+        if fraud_score is not None:
+            if fraud_score < 0.4:
+                return "Within normal range"
+            if fraud_score < 0.7:
+                return "Slightly elevated — minor deviations"
+            return "Suspected fraud"
+        # Quality items have quality_score
+        quality_score = item.get("quality_score")
+        if quality_score is not None:
+            if quality_score < 1.0:
+                return "Within normal range"
+            if quality_score < 2.0:
+                return "Slightly elevated repair rate"
+            return "Quality concern"
+        return ""
 
     @staticmethod
     def _paginate(items: list[dict], page: int, page_size: int) -> PaginatedResult:
