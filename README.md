@@ -65,6 +65,22 @@ The data generator creates realistic test data with three manufacturer tiers:
 
 Claims are split 50/50 between normal and anomalous patterns using four anomaly types: `high_amount` ($5k–$25k), `rapid_claim` (filed within 6 months), `repair_burst` (always repair type), and `combo` (high amount + repair).
 
+## Development with Kiro Specs
+
+This project was built using [Kiro](https://kiro.dev) specs — a structured approach that breaks feature development into requirements, design, and implementation tasks before writing code.
+
+Two specs drove the development:
+
+1. **Fraud Detection & Quality Analysis** (`.kiro/specs/fraud-detection-quality-analysis/`) — the initial full-stack spec covering data ingestion, Glue ETL, SKU enrichment, AI-powered analysis, FastAPI API, React dashboard, and CDK infrastructure. This spec defined 8 user stories with acceptance criteria, produced a detailed design with data models and API contracts, and generated 11 implementation tasks that built the entire pipeline from scratch.
+
+2. **Unsupervised Anomaly Detection** (`.kiro/specs/unsupervised-anomaly-detection/`) — a migration spec that replaced the original Bedrock LLM-based scoring with SageMaker Random Cut Forest. This spec defined the correctness properties for the new ML pipeline (score normalization bounds, feature matrix shape, threshold consistency) and broke the migration into 11 tasks covering feature engineering, training, batch transform, results loading, and infrastructure updates.
+
+The spec workflow — requirements → design → tasks → implementation — helped in several ways:
+- Caught design issues early (e.g., feature scaling strategy, score normalization approach) before writing code
+- Property-based tests from the spec caught edge cases in score normalization and feature engineering
+- Task breakdown made the Bedrock → SageMaker migration incremental rather than a risky big-bang rewrite
+- Requirements documents served as living documentation that stayed in sync with the codebase
+
 ## Architecture
 
 ```mermaid
